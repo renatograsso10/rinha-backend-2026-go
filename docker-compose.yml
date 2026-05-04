@@ -1,3 +1,13 @@
+x-api: &api
+  build: .
+  image: rinha-backend-2026-go-submission:latest
+  environment:
+    CLASSIFIER_MODE: linear
+    VISIT_CAP: "256"
+    GOMAXPROCS: "1"
+    GOMEMLIMIT: 64MiB
+    GOGC: "100"
+
 services:
   nginx:
     image: nginx:1.27-alpine
@@ -16,13 +26,7 @@ services:
           memory: "32MB"
 
   api1:
-    image: ghcr.io/renatograsso10/rinha-backend-2026-go@sha256:3307b1dc364f40ba857cee2e1525e10582f4d167666faef957e6ae656c72b8d4
-    environment:
-      CLASSIFIER_MODE: linear
-      VISIT_CAP: "256"
-      GOMAXPROCS: "1"
-      GOMEMLIMIT: 64MiB
-      GOGC: "100"
+    <<: *api
     deploy:
       resources:
         limits:
@@ -30,13 +34,7 @@ services:
           memory: "159MB"
 
   api2:
-    image: ghcr.io/renatograsso10/rinha-backend-2026-go@sha256:3307b1dc364f40ba857cee2e1525e10582f4d167666faef957e6ae656c72b8d4
-    environment:
-      CLASSIFIER_MODE: linear
-      VISIT_CAP: "256"
-      GOMAXPROCS: "1"
-      GOMEMLIMIT: 64MiB
-      GOGC: "100"
+    <<: *api
     deploy:
       resources:
         limits:
