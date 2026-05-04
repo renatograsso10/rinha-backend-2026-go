@@ -1,0 +1,44 @@
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: rinha-nginx
+    ports:
+      - "9999:9999"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api1
+      - api2
+    deploy:
+      resources:
+        limits:
+          cpus: "0.30"
+          memory: "32MB"
+
+  api1:
+    image: ghcr.io/renatograsso10/rinha-backend-2026-go@sha256:3307b1dc364f40ba857cee2e1525e10582f4d167666faef957e6ae656c72b8d4
+    environment:
+      CLASSIFIER_MODE: linear
+      VISIT_CAP: "256"
+      GOMAXPROCS: "1"
+      GOMEMLIMIT: 64MiB
+      GOGC: "100"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.35"
+          memory: "159MB"
+
+  api2:
+    image: ghcr.io/renatograsso10/rinha-backend-2026-go@sha256:3307b1dc364f40ba857cee2e1525e10582f4d167666faef957e6ae656c72b8d4
+    environment:
+      CLASSIFIER_MODE: linear
+      VISIT_CAP: "256"
+      GOMAXPROCS: "1"
+      GOMEMLIMIT: 64MiB
+      GOGC: "100"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.35"
+          memory: "159MB"
