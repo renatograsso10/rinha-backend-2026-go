@@ -1,0 +1,6 @@
+*.exe
+*.out
+*.err
+index.bin
+tmp-*.bin
+server
