@@ -1,7 +1,0 @@
-FROM alpine:3.20
-WORKDIR /app
-COPY server /app/server
-RUN chmod +x /app/server
-ENV CLASSIFIER_MODE=linear VISIT_CAP=256 GOMAXPROCS=1 GOMEMLIMIT=64MiB GOGC=100
-EXPOSE 8080
-ENTRYPOINT ["/app/server"]

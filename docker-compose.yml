@@ -1,6 +1,5 @@
 x-api: &api
-  build: .
-  image: rinha-backend-2026-go-submission:latest
+  image: ttl.sh/renatograsso10-rinha-2026-go@sha256:33a78d850441ff94e11a74d8789c2c3c762638b5325f51804d9f62c52781d044
   environment:
     CLASSIFIER_MODE: linear
     VISIT_CAP: "256"
