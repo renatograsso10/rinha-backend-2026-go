@@ -2,48 +2,26 @@ x-api: &api
     image: ghcr.io/renatograsso10/rinha-backend-2026-go-runtime@sha256:3f829e87ec54596b470d6fbe86a7c1ff9c26258b67429409d80db5e6d1594fb0
     security_opt:
       - seccomp=unconfined
-    volumes:
-      - sockets:/sockets
     ulimits:
       nofile:
         soft: 65535
         hard: 65535
 
 services:
-  proxy:
-    image: ghcr.io/renatograsso10/rinha-backend-2026-go-runtime@sha256:a7c3c412d427d3c44e3bcc6c1f96327a6d8bb645e69200b97cfcb5c32f4d298a
-    ports:
-      - "9999:9999"
-    volumes:
-      - sockets:/sockets
-    depends_on:
-      - api1
-      - api2
-    deploy:
-      resources:
-        limits:
-          cpus: "0.20"
-          memory: "50MB"
-
   api1:
     <<: *api
-    environment:
-      SOCKET_PATH: /sockets/api1.sock
+    ports:
+      - "9999:8080"
     deploy:
       resources:
         limits:
-          cpus: "0.40"
-          memory: "150MB"
+          cpus: "0.90"
+          memory: "250MB"
 
   api2:
     <<: *api
-    environment:
-      SOCKET_PATH: /sockets/api2.sock
     deploy:
       resources:
         limits:
-          cpus: "0.40"
-          memory: "150MB"
-
-volumes:
-  sockets:
+          cpus: "0.10"
+          memory: "100MB"
