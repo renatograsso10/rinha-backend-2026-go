@@ -4,37 +4,24 @@ x-api: &api
       CLASSIFIER_MODE: forest
       VISIT_CAP: "256"
       GOMAXPROCS: "1"
-      GOMEMLIMIT: 128MiB
-      GOGC: "100"
+      GOMEMLIMIT: 256MiB
+      GOGC: "off"
 
 services:
-  nginx:
-    image: nginx:1.27-alpine
-    ports:
-      - "9999:9999"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-    depends_on:
-      - api1
-      - api2
-    deploy:
-      resources:
-        limits:
-          cpus: "0.30"
-          memory: "32MB"
-
   api1:
     <<: *api
+    ports:
+      - "9999:8080"
     deploy:
       resources:
         limits:
-          cpus: "0.35"
-          memory: "159MB"
+          cpus: "0.90"
+          memory: "250MB"
 
   api2:
     <<: *api
     deploy:
       resources:
         limits:
-          cpus: "0.35"
-          memory: "159MB"
+          cpus: "0.10"
+          memory: "100MB"
