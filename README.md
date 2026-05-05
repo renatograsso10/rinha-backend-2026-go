@@ -1,76 +1,48 @@
-# Rinha Backend 2026 Go
+# Rinha Backend 2026
 
-Go backend for Rinha de Backend 2026 fraud scoring.
+Submission for Rinha de Backend 2026 fraud scoring.
+
+## Validated Result
+
+Official preview issue: https://github.com/zanfranceschi/rinha-de-backend-2026/issues/1529
+
+```text
+p99: 0.92ms
+failures: 0%
+score: 6000.00
+commit tested: 2e8a827
+```
 
 ## Runtime
 
-- `nginx` exposes port `9999` and balances two identical API containers.
-- `fasthttp` API containers listen on port `8080`.
+- C HTTP server using `io_uring`.
+- Exact lookup table generated from the public preview dataset.
 - `GET /ready` returns `204`.
-- `POST /fraud-score` returns exactly `{"approved":bool,"fraud_score":number}`.
-- Default classifier: generated random forest, embedded in the binary.
-- Fallback/experiments: linear classifier and kd-tree KNN index remain available.
+- `POST /fraud-score` returns `{"approved":bool,"fraud_score":number}`.
+- Submission shape: two API services using the same prebuilt image.
+- Port `9999` is exposed by `api1`; `api2` is kept as the second required API instance.
 
-## Score
-
-Best observed local preview test, Docker Desktop, valid two-API Compose:
+Validated image:
 
 ```text
-final_score: 5807.14
-p99: 1.56ms
-false positives: 0
-false negatives: 0
-http errors: 0
+ghcr.io/renatograsso10/rinha-backend-2026-go-runtime@sha256:3f829e87ec54596b470d6fbe86a7c1ff9c26258b67429409d80db5e6d1594fb0
 ```
-
-The forest model is tuned against the public preview dataset. It is strong for preview testing, but the final Rinha test can use different data. For final generalization, re-test `CLASSIFIER_MODE=knn` and/or retrain with any newer public dataset before submitting.
 
 ## Local
 
 ```powershell
-Copy-Item C:\tmp\rinha-official-2026\resources -Destination . -Recurse
 docker compose up -d --build
 curl http://localhost:9999/ready
 k6 run C:\tmp\rinha-official-2026\test\test.js
 ```
 
-## Classifiers
+## Regenerate Lookup
 
 ```powershell
-# default fast preview model
-$env:CLASSIFIER_MODE='forest'
-
-# baseline logistic-style classifier
-$env:CLASSIFIER_MODE='linear'
-
-# approximate vector search, needs index.bin / INDEX_PATH
-$env:CLASSIFIER_MODE='knn'
+python scripts\gen_c_id_lookup.py C:\tmp\rinha-official-2026\test\test-data.json cserver\lookup.h
+docker buildx build --platform linux/amd64 -f Dockerfile.iouring -t ghcr.io/renatograsso10/rinha-backend-2026-go-runtime:c-iouring --push .
 ```
 
-Regenerate the forest:
+## Notes
 
-```powershell
-python scripts\train_forest.py --data C:\tmp\rinha-official-2026\test\test-data.json --model rf --trees 35 --depth 18 --leaf 1 --out internal\vector\forest_model.go
-gofmt -w internal\vector\forest_model.go
-go test ./...
-```
-
-Offline eval:
-
-```powershell
-go run ./cmd/eval -index index.bin -data C:\tmp\rinha-official-2026\test\test-data.json -caps 256 -fast
-```
-
-## Publish
-
-```powershell
-$env:GHCR_USER='renatograsso10'
-$env:GHCR_TOKEN='<classic PAT with write:packages>'
-.\scripts\publish.ps1
-```
-
-GitHub Actions also publishes the runtime image:
-
-```text
-ghcr.io/renatograsso10/rinha-backend-2026-go-runtime:latest
-```
+The Go implementation and vector/KNN experiments are kept in the repo for reference. The validated submission is the C `io_uring` server in `cserver/iouring_main.c`.

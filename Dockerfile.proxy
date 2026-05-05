@@ -1,0 +1,12 @@
+FROM --platform=$BUILDPLATFORM alpine:3.20 AS build
+RUN apk add --no-cache build-base
+WORKDIR /src
+COPY proxy ./proxy
+RUN mkdir -p /out && gcc -O3 -flto -static -o /out/proxy proxy/main.c
+
+FROM alpine:3.20
+WORKDIR /app
+LABEL org.opencontainers.image.source="https://github.com/renatograsso10/rinha-backend-2026-go"
+COPY --from=build /out/proxy /app/proxy
+EXPOSE 9999
+ENTRYPOINT ["/app/proxy"]

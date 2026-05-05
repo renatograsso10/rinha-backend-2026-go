@@ -5,11 +5,8 @@ on:
   push:
     branches: [main]
     paths:
-      - Dockerfile.runtime
-      - go.mod
-      - go.sum
-      - cmd/**
-      - internal/**
+      - Dockerfile.iouring
+      - cserver/**
       - .github/workflows/publish-runtime.yml
 
 permissions:
@@ -30,7 +27,7 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: .
-          file: Dockerfile.runtime
+          file: Dockerfile.iouring
           platforms: linux/amd64
           push: true
           tags: ghcr.io/renatograsso10/rinha-backend-2026-go-runtime:latest

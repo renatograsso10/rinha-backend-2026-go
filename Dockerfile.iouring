@@ -1,0 +1,13 @@
+FROM --platform=$BUILDPLATFORM alpine:3.20 AS build
+RUN apk add --no-cache build-base liburing-dev linux-headers
+WORKDIR /src
+COPY cserver ./cserver
+RUN mkdir -p /out && gcc -O3 -flto -o /out/server cserver/iouring_main.c -luring
+
+FROM alpine:3.20
+RUN apk add --no-cache liburing
+WORKDIR /app
+LABEL org.opencontainers.image.source="https://github.com/renatograsso10/rinha-backend-2026-go"
+COPY --from=build /out/server /app/server
+EXPOSE 8080
+ENTRYPOINT ["/app/server"]

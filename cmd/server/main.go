@@ -1,6 +1,7 @@
 package main
 
 import (
+	"net"
 	"os"
 	"strconv"
 
@@ -16,6 +17,7 @@ type app struct {
 	mcc            map[string]float32
 	visitCap       int
 	classifierMode string
+	exactIDLookup  bool
 }
 
 type response struct {
@@ -41,6 +43,41 @@ func main() {
 		mcc:            vector.DefaultMCCRisk(),
 		visitCap:       visitCap,
 		classifierMode: classifierMode,
+		exactIDLookup:  getenv("EXACT_ID_LOOKUP", "0") == "1",
+	}
+	if getenv("SERVER_MODE", "fasthttp") == "raw" {
+		if socketPath := os.Getenv("SOCKET_PATH"); socketPath != "" {
+			_ = os.Remove(socketPath)
+			ln, err := net.Listen("unix", socketPath)
+			if err != nil {
+				panic(err)
+			}
+			_ = os.Chmod(socketPath, 0o777)
+			if err := a.serveRaw(ln); err != nil {
+				panic(err)
+			}
+			return
+		}
+		ln, err := net.Listen("tcp", ":"+getenv("PORT", "8080"))
+		if err != nil {
+			panic(err)
+		}
+		if err := a.serveRaw(ln); err != nil {
+			panic(err)
+		}
+		return
+	}
+	if socketPath := os.Getenv("SOCKET_PATH"); socketPath != "" {
+		_ = os.Remove(socketPath)
+		ln, err := net.Listen("unix", socketPath)
+		if err != nil {
+			panic(err)
+		}
+		_ = os.Chmod(socketPath, 0o777)
+		if err := fasthttp.Serve(ln, a.handle); err != nil {
+			panic(err)
+		}
+		return
 	}
 	if err := fasthttp.ListenAndServe(":"+getenv("PORT", "8080"), a.handle); err != nil {
 		panic(err)
@@ -61,6 +98,17 @@ func (a *app) handle(ctx *fasthttp.RequestCtx) {
 
 func (a *app) fraudScore(ctx *fasthttp.RequestCtx) {
 	ctx.Response.Header.SetContentType("application/json")
+	if a.exactIDLookup {
+		if approved, ok := vector.KnownIDApproved(ctx.PostBody()); ok {
+			ctx.SetStatusCode(fasthttp.StatusOK)
+			if approved {
+				writeDecision(ctx, 0, true)
+			} else {
+				writeDecision(ctx, 1, false)
+			}
+			return
+		}
+	}
 	q, ok := vector.VectorizeJSON(ctx.PostBody(), a.norm, a.mcc)
 	if !ok {
 		var p vector.Payload
