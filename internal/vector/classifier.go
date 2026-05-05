@@ -2,6 +2,10 @@ package vector
 
 const LinearThreshold = float32(-2.6574135)
 
+func LinearApproved(v [Dims]float32) bool {
+	return LinearRisk(v) < LinearThreshold
+}
+
 func LinearRisk(v [Dims]float32) float32 {
 	amount := v[0]
 	installments := v[1]

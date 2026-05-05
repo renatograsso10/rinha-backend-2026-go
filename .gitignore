@@ -4,3 +4,5 @@
 index.bin
 tmp-*.bin
 server
+__pycache__/
+scripts/__pycache__/

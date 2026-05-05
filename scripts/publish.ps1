@@ -1,5 +1,6 @@
 param(
-    [string]$Image = "ghcr.io/renatograsso10/rinha-backend-2026-go:latest"
+    [string]$Image = "ghcr.io/renatograsso10/rinha-backend-2026-go-runtime:latest",
+    [string]$Dockerfile = "Dockerfile.runtime"
 )
 
 $ErrorActionPreference = "Stop"
@@ -12,4 +13,4 @@ if (-not $env:GHCR_TOKEN) {
 }
 
 $env:GHCR_TOKEN | docker login ghcr.io -u $env:GHCR_USER --password-stdin
-docker buildx build --platform linux/amd64 -t $Image --push .
+docker buildx build --platform linux/amd64 -f $Dockerfile -t $Image --push .

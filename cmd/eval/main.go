@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -66,6 +67,9 @@ func main() {
 		queries[i] = q
 	}
 	fmt.Printf("entries=%d refs=%d\n", len(data.Entries), idx.Count())
+	evalClassifier("linear", data.Entries, queries, vector.LinearApproved)
+	evalClassifier("forest", data.Entries, queries, vector.ForestApproved)
+	evalScoredClassifier("forest-best", data.Entries, queries, vector.ForestScore)
 	for _, cap := range caps {
 		start := time.Now()
 		fp, fn := 0, 0
@@ -119,6 +123,70 @@ func main() {
 				cap, margin, ann, fp, fn, fp+3*fn, failRate, elapsed/time.Duration(len(data.Entries)), elapsed)
 		}
 	}
+}
+
+type scoredDecision struct {
+	score            float32
+	expectedApproved bool
+}
+
+func evalScoredClassifier(name string, entries []entry, queries [][vector.Dims]float32, score func([vector.Dims]float32) float32) {
+	decisions := make([]scoredDecision, len(entries))
+	for i, q := range queries {
+		decisions[i] = scoredDecision{score: score(q), expectedApproved: entries[i].ExpectedApproved}
+	}
+	sort.Slice(decisions, func(i, j int) bool { return decisions[i].score < decisions[j].score })
+	fp, fn := 0, 0
+	for _, d := range decisions {
+		if d.expectedApproved {
+			fp++
+		}
+	}
+	bestWeighted, bestThreshold, bestFP, bestFN := fp+3*fn, decisions[0].score, fp, fn
+	for i := 0; i < len(decisions); {
+		j := i + 1
+		for j < len(decisions) && decisions[j].score == decisions[i].score {
+			j++
+		}
+		for _, d := range decisions[i:j] {
+			if d.expectedApproved {
+				fp--
+			} else {
+				fn++
+			}
+		}
+		threshold := decisions[i].score + 1
+		if j < len(decisions) {
+			threshold = decisions[j].score
+		}
+		weighted := fp + 3*fn
+		if weighted < bestWeighted {
+			bestWeighted, bestThreshold, bestFP, bestFN = weighted, threshold, fp, fn
+		}
+		i = j
+	}
+	failRate := float64(bestFP+bestFN) / float64(len(entries)) * 100
+	fmt.Printf("%s threshold=%.9g fp=%d fn=%d weighted=%d fail=%.2f%%\n",
+		name, bestThreshold, bestFP, bestFN, bestWeighted, failRate)
+}
+
+func evalClassifier(name string, entries []entry, queries [][vector.Dims]float32, approve func([vector.Dims]float32) bool) {
+	start := time.Now()
+	fp, fn := 0, 0
+	for i, q := range queries {
+		approved := approve(q)
+		if approved != entries[i].ExpectedApproved {
+			if approved {
+				fn++
+			} else {
+				fp++
+			}
+		}
+	}
+	elapsed := time.Since(start)
+	failRate := float64(fp+fn) / float64(len(entries)) * 100
+	fmt.Printf("%s fp=%d fn=%d weighted=%d fail=%.2f%% avg=%s total=%s\n",
+		name, fp, fn, fp+3*fn, failRate, elapsed/time.Duration(len(entries)), elapsed)
 }
 
 func parseCaps(s string) []int {
