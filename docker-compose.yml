@@ -1,50 +1,25 @@
 x-api: &api
-    image: ghcr.io/renatograsso10/rinha-backend-2026-go-runtime@sha256:c23394e3a1f728451064278bd8c22917d1e8dfb99a8b202243781df3de0ab987
-    environment:
-      SOCKET_PATH: /sockets/api.sock
-    volumes:
-      - sockets:/sockets
+    image: ghcr.io/renatograsso10/rinha-backend-2026-go-runtime@sha256:fe68075ea02fad0a46305601ebc768f6cf9fbb81825640c818974258aee9a9ec
     ulimits:
       nofile:
         soft: 65535
         hard: 65535
 
 services:
-  haproxy:
-    image: haproxy:3.3
-    ports:
-      - "9999:9999"
-    volumes:
-      - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
-      - sockets:/sockets
-    depends_on:
-      - api1
-      - api2
-    deploy:
-      resources:
-        limits:
-          cpus: "0.20"
-          memory: "50MB"
-
   api1:
     <<: *api
-    environment:
-      SOCKET_PATH: /sockets/api1.sock
+    ports:
+      - "9999:8080"
     deploy:
       resources:
         limits:
-          cpus: "0.40"
-          memory: "150MB"
+          cpus: "0.90"
+          memory: "250MB"
 
   api2:
     <<: *api
-    environment:
-      SOCKET_PATH: /sockets/api2.sock
     deploy:
       resources:
         limits:
-          cpus: "0.40"
-          memory: "150MB"
-
-volumes:
-  sockets:
+          cpus: "0.10"
+          memory: "100MB"
