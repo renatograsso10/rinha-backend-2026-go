@@ -1,5 +1,5 @@
 x-api: &api
-    image: ghcr.io/renatograsso10/rinha-backend-2026-c-exact@sha256:9e3eddbe3f887f01f4b1e6f8dcffbe2653a0d72687eb0c90fc67bb399052da5f
+    image: ghcr.io/renatograsso10/rinha-backend-2026-go-runtime@sha256:c23394e3a1f728451064278bd8c22917d1e8dfb99a8b202243781df3de0ab987
     environment:
       SOCKET_PATH: /sockets/api.sock
     volumes:
