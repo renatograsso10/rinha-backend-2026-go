@@ -4,7 +4,8 @@ Go backend for Rinha de Backend 2026 fraud scoring.
 
 ## Runtime
 
-- `fasthttp` API on port `8080`, exposed as `9999` by Compose.
+- `nginx` exposes port `9999` and balances two identical API containers.
+- `fasthttp` API containers listen on port `8080`.
 - `GET /ready` returns `204`.
 - `POST /fraud-score` returns exactly `{"approved":bool,"fraud_score":number}`.
 - Default classifier: generated random forest, embedded in the binary.
@@ -12,11 +13,11 @@ Go backend for Rinha de Backend 2026 fraud scoring.
 
 ## Score
 
-Best observed local preview test, Docker Desktop, direct single API:
+Best observed local preview test, Docker Desktop, valid two-API Compose:
 
 ```text
-final_score: 5943.8
-p99: 1.14ms
+final_score: 5807.14
+p99: 1.56ms
 false positives: 0
 false negatives: 0
 http errors: 0
