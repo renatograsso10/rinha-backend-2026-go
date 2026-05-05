@@ -3,6 +3,6 @@
 *.err
 index.bin
 tmp-*.bin
-server
+/server
 __pycache__/
 scripts/__pycache__/
