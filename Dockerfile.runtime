@@ -3,12 +3,15 @@ WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o /out/preprocess ./cmd/preprocess
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o /out/server ./cmd/server
+RUN /out/preprocess -in resources/references.json.gz -out /out/index.bin
 
 FROM alpine:3.20
 WORKDIR /app
 LABEL org.opencontainers.image.source="https://github.com/renatograsso10/rinha-backend-2026-go"
 COPY --from=build /out/server /app/server
-ENV CLASSIFIER_MODE=forest VISIT_CAP=256 GOMAXPROCS=1 GOMEMLIMIT=256MiB GOGC=100
+COPY --from=build /out/index.bin /app/index.bin
+ENV INDEX_PATH=/app/index.bin VISIT_CAP=8192 GOMAXPROCS=1 GOMEMLIMIT=256MiB GOGC=100
 EXPOSE 8080
 ENTRYPOINT ["/app/server"]

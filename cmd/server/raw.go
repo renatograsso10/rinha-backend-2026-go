@@ -117,17 +117,12 @@ func parseHeaderInt(s []byte) int {
 }
 
 func (a *app) rawFraudResponse(body []byte) []byte {
-	if approved, ok := vector.KnownIDApproved(body); ok {
-		if approved {
-			return rawOKTrue
-		}
-		return rawOKFalse
-	}
 	q, ok := vector.VectorizeJSON(body, a.norm, a.mcc)
 	if !ok {
 		return rawOKTrue
 	}
-	if vector.ForestApproved(q) {
+	_, approved := a.decisionForVector(q)
+	if approved {
 		return rawOKTrue
 	}
 	return rawOKFalse

@@ -1,6 +1,6 @@
 param(
-    [string]$Image = "ghcr.io/renatograsso10/rinha-backend-2026-go-runtime:latest",
-    [string]$Dockerfile = "Dockerfile.iouring"
+    [string]$Image = "ghcr.io/renatograsso10/rinha-backend-2026-go-runtime:knn",
+    [string]$Dockerfile = "Dockerfile"
 )
 
 $ErrorActionPreference = "Stop"

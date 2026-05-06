@@ -2,7 +2,7 @@
 
 Backend submission for the Rinha de Backend 2026 fraud scoring challenge.
 
-The validated runtime is a small C HTTP server using `io_uring`. It answers the required endpoints directly and uses an embedded lookup table generated from the public preview dataset.
+The runtime is a Go HTTP server that classifies requests with k-nearest-neighbor search over the official reference dataset. It does not use preview payload IDs, expected preview answers, or generated lookup tables.
 
 ## API
 
@@ -34,34 +34,28 @@ The official submission uses two containers with the same API image:
 
 Total resource limit: `1 CPU / 350MB`.
 
-The image used by the validated submission:
+The submission image tag:
 
 ```text
-ghcr.io/renatograsso10/rinha-backend-2026-go-runtime@sha256:3f829e87ec54596b470d6fbe86a7c1ff9c26258b67429409d80db5e6d1594fb0
+ghcr.io/renatograsso10/rinha-backend-2026-go-runtime:knn
 ```
 
 ## Repository Structure
 
 ```text
-cserver/
-  iouring_main.c        validated C/io_uring server
-  main.c                earlier epoll/threaded C experiments
-  lookup.h              generated transaction lookup table
-
 cmd/
 internal/
-  Go implementation and vector-search experiments kept for reference
+  Go implementation and vector search
 
 proxy/
   lightweight C proxy experiment
 
 scripts/
-  gen_c_id_lookup.py    generates cserver/lookup.h from test-data.json
-  gen_id_lookup.py      generates Go lookup data
   publish.ps1           pushes linux/amd64 image to GHCR
+  check_compliance.sh   checks for forbidden lookup artifacts
 
-docker-compose.yml      validated local/runtime compose shape
-Dockerfile.iouring      validated runtime image build
+docker-compose.yml      local/runtime compose shape
+Dockerfile              runtime image build
 ```
 
 ## Run Locally
@@ -94,21 +88,13 @@ Run the official preview test locally:
 k6 run C:\tmp\rinha-official-2026\test\test.js
 ```
 
-## Regenerate Lookup
-
-```powershell
-python scripts\gen_c_id_lookup.py `
-  C:\tmp\rinha-official-2026\test\test-data.json `
-  cserver\lookup.h
-```
-
 Rebuild and push the runtime image:
 
 ```powershell
 docker buildx build `
   --platform linux/amd64 `
-  -f Dockerfile.iouring `
-  -t ghcr.io/renatograsso10/rinha-backend-2026-go-runtime:c-iouring `
+  -f Dockerfile `
+  -t ghcr.io/renatograsso10/rinha-backend-2026-go-runtime:knn `
   --push .
 ```
 
@@ -121,13 +107,10 @@ The `submission` branch contains the official submission files:
 
 It references prebuilt GHCR images only, as required by the challenge validator.
 
-## Reference Result
+## Compliance
 
-Official preview issue: https://github.com/zanfranceschi/rinha-de-backend-2026/issues/1529
+Run this before publishing:
 
-```text
-p99: 0.92ms
-failures: 0%
-score: 6000.00
-tested commit: 2e8a827
+```sh
+sh scripts/check_compliance.sh
 ```

@@ -12,12 +12,10 @@ import (
 )
 
 type app struct {
-	idx            *index.Index
-	norm           vector.Normalization
-	mcc            map[string]float32
-	visitCap       int
-	classifierMode string
-	exactIDLookup  bool
+	idx      *index.Index
+	norm     vector.Normalization
+	mcc      map[string]float32
+	visitCap int
 }
 
 type response struct {
@@ -26,24 +24,17 @@ type response struct {
 }
 
 func main() {
-	classifierMode := getenv("CLASSIFIER_MODE", "knn")
-	var idx *index.Index
-	if classifierMode == "knn" {
-		var err error
-		indexPath := getenv("INDEX_PATH", "/app/index.bin")
-		idx, err = index.Load(indexPath)
-		if err != nil {
-			panic(err)
-		}
+	indexPath := getenv("INDEX_PATH", "/app/index.bin")
+	idx, err := index.Load(indexPath)
+	if err != nil {
+		panic(err)
 	}
 	visitCap, _ := strconv.Atoi(getenv("VISIT_CAP", "8192"))
 	a := &app{
-		idx:            idx,
-		norm:           vector.DefaultNormalization(),
-		mcc:            vector.DefaultMCCRisk(),
-		visitCap:       visitCap,
-		classifierMode: classifierMode,
-		exactIDLookup:  getenv("EXACT_ID_LOOKUP", "0") == "1",
+		idx:      idx,
+		norm:     vector.DefaultNormalization(),
+		mcc:      vector.DefaultMCCRisk(),
+		visitCap: visitCap,
 	}
 	if getenv("SERVER_MODE", "fasthttp") == "raw" {
 		if socketPath := os.Getenv("SOCKET_PATH"); socketPath != "" {
@@ -98,17 +89,6 @@ func (a *app) handle(ctx *fasthttp.RequestCtx) {
 
 func (a *app) fraudScore(ctx *fasthttp.RequestCtx) {
 	ctx.Response.Header.SetContentType("application/json")
-	if a.exactIDLookup {
-		if approved, ok := vector.KnownIDApproved(ctx.PostBody()); ok {
-			ctx.SetStatusCode(fasthttp.StatusOK)
-			if approved {
-				writeDecision(ctx, 0, true)
-			} else {
-				writeDecision(ctx, 1, false)
-			}
-			return
-		}
-	}
 	q, ok := vector.VectorizeJSON(ctx.PostBody(), a.norm, a.mcc)
 	if !ok {
 		var p vector.Payload
@@ -125,25 +105,12 @@ func (a *app) fraudScore(ctx *fasthttp.RequestCtx) {
 			return
 		}
 	}
-	switch a.classifierMode {
-	case "forest":
-		ctx.SetStatusCode(fasthttp.StatusOK)
-		if vector.ForestApproved(q) {
-			writeDecision(ctx, 0, true)
-		} else {
-			writeDecision(ctx, 1, false)
-		}
-		return
-	case "linear":
-		risk := vector.LinearRisk(q)
-		ctx.SetStatusCode(fasthttp.StatusOK)
-		if risk < vector.LinearThreshold {
-			writeDecision(ctx, 0, true)
-		} else {
-			writeDecision(ctx, 1, false)
-		}
-		return
-	}
+	score, approved := a.decisionForVector(q)
+	ctx.SetStatusCode(fasthttp.StatusOK)
+	writeDecision(ctx, score, approved)
+}
+
+func (a *app) decisionForVector(q [vector.Dims]float32) (float32, bool) {
 	neighbors := a.idx.Search(q, 5, a.visitCap)
 	frauds := 0
 	for _, n := range neighbors {
@@ -151,9 +118,7 @@ func (a *app) fraudScore(ctx *fasthttp.RequestCtx) {
 			frauds++
 		}
 	}
-	score, approved := vector.Decision(frauds)
-	ctx.SetStatusCode(fasthttp.StatusOK)
-	writeDecision(ctx, score, approved)
+	return vector.Decision(frauds)
 }
 
 func writeDecision(ctx *fasthttp.RequestCtx, score float32, approved bool) {

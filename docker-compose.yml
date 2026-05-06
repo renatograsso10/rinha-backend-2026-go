@@ -1,10 +1,8 @@
 x-api: &api
-    image: ${API_IMAGE:-ghcr.io/renatograsso10/rinha-backend-2026-go-runtime@sha256:3f829e87ec54596b470d6fbe86a7c1ff9c26258b67429409d80db5e6d1594fb0}
+    image: ${API_IMAGE:-ghcr.io/renatograsso10/rinha-backend-2026-go-runtime:knn}
     build:
       context: .
-      dockerfile: Dockerfile.iouring
-    security_opt:
-      - seccomp=unconfined
+      dockerfile: Dockerfile
     ulimits:
       nofile:
         soft: 65535
