@@ -1,5 +1,5 @@
 x-api: &api
-    image: ghcr.io/renatograsso10/rinha-backend-2026-go-runtime@sha256:62049ecb30f7972b770379afd090fe1089ad8c755236340bd58d674304338083
+    image: ghcr.io/renatograsso10/rinha-backend-2026-go-runtime@sha256:8b26345bcf9f73575be45adf69606694c967513ba77e127b25b041acef6db5d4
     ulimits:
       nofile:
         soft: 65535
