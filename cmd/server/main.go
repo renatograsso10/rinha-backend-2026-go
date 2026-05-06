@@ -12,10 +12,12 @@ import (
 )
 
 type app struct {
-	idx      *index.Index
-	norm     vector.Normalization
-	mcc      map[string]float32
-	visitCap int
+	idx       *index.Index
+	norm      vector.Normalization
+	mcc       map[string]float32
+	visitCap  int
+	k         int
+	threshold float32
 }
 
 type response struct {
@@ -30,11 +32,21 @@ func main() {
 		panic(err)
 	}
 	visitCap, _ := strconv.Atoi(getenv("VISIT_CAP", "8192"))
+	k, _ := strconv.Atoi(getenv("K_NEIGHBORS", "5"))
+	if k <= 0 {
+		k = 5
+	}
+	thr, _ := strconv.ParseFloat(getenv("FRAUD_THRESHOLD", "0.6"), 32)
+	if thr <= 0 || thr > 1 {
+		thr = 0.6
+	}
 	a := &app{
-		idx:      idx,
-		norm:     vector.DefaultNormalization(),
-		mcc:      vector.DefaultMCCRisk(),
-		visitCap: visitCap,
+		idx:       idx,
+		norm:      vector.DefaultNormalization(),
+		mcc:       vector.DefaultMCCRisk(),
+		visitCap:  visitCap,
+		k:         k,
+		threshold: float32(thr),
 	}
 	if getenv("SERVER_MODE", "fasthttp") == "raw" {
 		if socketPath := os.Getenv("SOCKET_PATH"); socketPath != "" {
@@ -111,14 +123,14 @@ func (a *app) fraudScore(ctx *fasthttp.RequestCtx) {
 }
 
 func (a *app) decisionForVector(q [vector.Dims]float32) (float32, bool) {
-	neighbors := a.idx.Search(q, 5, a.visitCap)
+	neighbors := a.idx.Search(q, a.k, a.visitCap)
 	frauds := 0
 	for _, n := range neighbors {
 		if n.Fraud {
 			frauds++
 		}
 	}
-	return vector.Decision(frauds)
+	return vector.DecisionWith(frauds, a.k, a.threshold)
 }
 
 func writeDecision(ctx *fasthttp.RequestCtx, score float32, approved bool) {

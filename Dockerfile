@@ -11,6 +11,6 @@ FROM alpine:3.20
 WORKDIR /app
 COPY --from=build /out/server /app/server
 COPY --from=build /out/index.bin /app/index.bin
-ENV INDEX_PATH=/app/index.bin VISIT_CAP=8192 GOMAXPROCS=1 GOMEMLIMIT=64MiB GOGC=100
+ENV INDEX_PATH=/app/index.bin VISIT_CAP=256 K_NEIGHBORS=5 FRAUD_THRESHOLD=0.2 SERVER_MODE=raw GOMAXPROCS=1 GOMEMLIMIT=64MiB GOGC=100
 EXPOSE 8080
 ENTRYPOINT ["/app/server"]

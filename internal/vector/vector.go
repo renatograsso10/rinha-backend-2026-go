@@ -142,6 +142,14 @@ func Decision(frauds int) (float32, bool) {
 	return score, score < 0.6
 }
 
+func DecisionWith(frauds, k int, threshold float32) (float32, bool) {
+	if k <= 0 {
+		k = 5
+	}
+	score := float32(frauds) / float32(k)
+	return score, score < threshold
+}
+
 func clamp32(v float64) float32 {
 	if v < 0 {
 		return 0
